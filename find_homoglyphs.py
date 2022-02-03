@@ -6,6 +6,7 @@ from homoglypher.glyph import Glyph
 import os, multiprocessing
 from functools import partial
 import pandas as pd
+import numpy as np
 
 def draw_char(char, typeface, size):
     """
@@ -39,14 +40,17 @@ def make_coocc_table(typeface, size=10, n_cores=4):
         print("+ Generating bitmaps")
         bitmaps = pool.map(to_pool, [chr(i) for i in range(0x10ffff)])
 
-    # now, draw a whitespace glyph. this process won't track these or 
-    # empty bitmaps
+    # now, draw a whitespace glyph and a notdef glyph. this process 
+    # won't track either of these or empty bitmaps (it would be great to 
+    # track notdefs, but some fonts are so overloaded with them that 
+    # they gum up the rest of this process)
+    notdef = draw_char(chr(0), typeface, size)
     whitespace = draw_char(chr(20), typeface, size)
 
-    # compile the bitmaps into a dataframe and remove whitespace/empty
-    # glyphs
+    # compile to a dataframe and do the glyph pruning
     df = pd.DataFrame(enumerate(bitmaps), columns=['DEC', 'BITMAP'])
-    df = df[(df['BITMAP'] != whitespace) & (df['BITMAP'] != b'')]
+    df = df[(df['BITMAP'] != notdef) & (df['BITMAP'] != whitespace)]
+    df = df[(df['BITMAP'] != b'')]
 
     # oddly, the homoglyphs themselves aren't important, so generate a 
     # remapping dictionary of homoglyph: index position
@@ -70,9 +74,14 @@ def make_coocc_table(typeface, size=10, n_cores=4):
         .replace(remap)
     )
 
-    # using pd.crosstab(), build a glyph x character table. do a dot 
-    # product on the result to get the character co-occurences
+    # using pd.crosstab(), build a glyph x character table
+    print("+ Cross tabulating")
     tabulated = pd.crosstab(groups['BITMAP'], groups['DEC'])
+
+    # convert to a sparse datatype and do a dot product on the result 
+    # to get the character co-occurrences
+    print("+ Converting to co-occurrence matrix")
+    tabulated = tabulated.astype(pd.SparseDtype('int', np.nan))
     return tabulated.T.dot(tabulated)
 
 def filter_files(args):
@@ -87,7 +96,7 @@ def filter_files(args):
     outfiles = os.listdir(args.outdir)
     outfiles = [f[:-4] for f in outfiles]
     to_run = [f for f in infiles if f.startswith('.') == False and f[:-4] not in outfiles]
-    print(len(outfiles), "fonts already generated. Generating", len(to_run), "fonts")
+    print(len(outfiles), "font(s) already generated. Generating", len(to_run), "font(s)")
     return to_run
 
 if __name__ == '__main__':
