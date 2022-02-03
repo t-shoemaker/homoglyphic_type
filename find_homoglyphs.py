@@ -22,7 +22,6 @@ def draw_char(char, typeface, size):
     g = Glyph(char)
     return g.bitmap(typeface, size, 'b64')
 
-
 def find_glyphs(typeface, size=10, n_cores=4):
     """
     find all character co-occurrences for a font, where a co-occurrence 
@@ -74,7 +73,6 @@ def find_glyphs(typeface, size=10, n_cores=4):
         .reset_index()
         .replace(remap)
     )
-
     return char_groups
 
 def make_coocc_table(char_groups):
