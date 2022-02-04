@@ -40,21 +40,24 @@ def find_glyphs(typeface, size=10, n_cores=4):
         print("+ Generating bitmaps")
         bitmaps = pool.map(to_pool, [chr(i) for i in range(0x10ffff)])
 
-    # now, draw a whitespace glyph and a notdef glyph. this process 
+    # now, draw a whitespace glyph and the notdef glyphs. this process 
     # won't track either of these or empty bitmaps (it would be great to 
     # track notdefs, but some fonts are so overloaded with them that 
     # they gum up the rest of this process)
-    notdef = draw_char(chr(0), typeface, size)
+    notdef_1 = draw_char(chr(0), typeface, size)
+    notdef_2 = draw_char(chr(0x10ffff), typeface, size)
     whitespace = draw_char(chr(20), typeface, size)
 
     # compile to a dataframe and do the glyph pruning
     df = pd.DataFrame(enumerate(bitmaps), columns=['DEC', 'BITMAP'])
-    df = df[(df['BITMAP'] != notdef) & (df['BITMAP'] != whitespace)]
-    df = df[df['BITMAP'] != b'']
+    df = df[(df['BITMAP'] != notdef_1) & (df['BITMAP'] != notdef_2)]
+    df = df[(df['BITMAP'] != whitespace) & (df['BITMAP'] != b'')]
 
     # oddly, the homoglyphs themselves aren't important, so generate a 
-    # remapping dictionary of homoglyph: index position
+    # remapping dictionary of homoglyph: index position and then remove
+    # the homoglyphs for a speed up
     remap = {bitmap: idx for idx, bitmap in enumerate(df['BITMAP'].unique())}
+    df = df.replace(remap)
 
     # group the unicode decimals by matching bitmaps
     print("+ Grouping characters")
@@ -71,7 +74,6 @@ def find_glyphs(typeface, size=10, n_cores=4):
         char_groups
         .explode('DEC')
         .reset_index()
-        .replace(remap)
     )
     return char_groups
 
