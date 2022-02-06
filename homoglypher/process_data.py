@@ -20,7 +20,7 @@ def get_style(name):
     base, style = name[:cut_at], name[cut_at:]
     style = style.replace("-", "")
     if base == '':
-        base, style = filename, None
+        base, style = name, None
     return base, style
 
 class HomoglyphJSON:
