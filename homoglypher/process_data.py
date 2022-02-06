@@ -6,6 +6,22 @@ import json
 import string
 import unicodedata
 import pandas as pd
+import numpy as np
+
+def get_style(name):
+    """
+    split the style from the base name of a font (e.g. times-bold => times, bold)
+    """
+    cut_at = 0
+    for idx, char in enumerate(name):
+        if char in string.punctuation:
+            cut_at = idx
+            break
+    base, style = name[:cut_at], name[cut_at:]
+    style = style.replace("-", "")
+    if base == '':
+        base, style = filename, None
+    return base, style
 
 class HomoglyphJSON:
 
@@ -18,28 +34,9 @@ class HomoglyphJSON:
         with open(path, 'r') as j:
             self.data = json.load(j)
         self.name = filename.replace(".json", "")
-        self.base, self.style = self._style()
+        self.base, self.style = get_style(self.name)
         self.record = self._make_record()
 
-    def _style(self):
-        """
-        split the style from the base name of a font (e.g. times-bold => times, bold)
-        """
-        cut_at = 0
-        filename = self.name
-        for idx, char in enumerate(filename):
-            if char in string.punctuation:
-                cut_at = idx
-                break
-        base = filename[:cut_at]
-        style = filename[cut_at:]
-        style = style.replace("-", "")
-
-        if base == '':
-            base, style = filename, None
-        
-        return base, style   
- 
     def _make_record(self):
         """
         create a dataframe from the json homoglyph data
@@ -92,3 +89,61 @@ class HomoglyphJSON:
             )
         )
         return df
+
+class FontTable:
+
+    def __init__(self, filename, indir):
+        """
+        initialize by loading the data, then assign the name and get the font base
+        and style
+        """
+        path = os.path.join(indir, filename)
+        self.coocc = pd.read_csv(path, index_col=0)
+        self.name = filename.replace(".csv", "")
+        self.base, self.style = get_style(self.name)
+        self.n_dec = len(self.coocc.columns)
+        self.n_homoglyphs = self._count_homoglyphs()
+        self.record = self._make_record()
+
+    def _count_homoglyphs(self):
+        """
+        find the number of rows where the sum of row values is over 1. those have
+        co-occurring characters, i.e. homoglyphs
+        """
+        homoglyph_rows = self.coocc[self.coocc.sum(axis=1) > 1]
+        return len(homoglyph_rows)
+
+    def _make_record(self):
+        """
+        create a small dataframe of high level metadata about the font
+        """
+        record = pd.DataFrame({
+            'BASE': self.base,
+            'STYLE': self.style,
+            'N_DEC': self.n_dec,
+            'N_HOMOGLYPH': self.n_homoglyphs
+        }, index=[self.name])
+        return record
+
+    @staticmethod
+    def _get_homoglyph_group(row):
+        """
+        for a row in the co-occurrence table that has 2+ entries, return the
+        decimals of each character in the group
+        """
+        mask = row.to_numpy().nonzero()
+        nonzero = row.iloc[mask]
+        return nonzero.index.tolist()
+
+    def homoglyph_groups(self):
+        """
+        find the unique set of decimal groups for each homoglyph
+        """
+        homoglyphs = self.coocc[self.coocc.sum(axis=1) > 1]
+        groups = []
+        for dec in homoglyphs.index:
+            group = self._get_homoglyph_group(homoglyphs.loc[dec])
+            groups.append(group)
+        to_tuple = map(tuple, groups)
+        return [list(group) for group in set(to_tuple)]
+

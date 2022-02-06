@@ -24,8 +24,7 @@ def draw_char(char, typeface, size):
 
 def find_glyphs(typeface, size=10, n_cores=4):
     """
-    find all character co-occurrences for a font, where a co-occurrence 
-    marks characters that are represented by the same glyph
+    find all glyphs in a font
 
     :param str typeface: filepath to a font file
     :param int size: size of glyphs to draw
@@ -86,6 +85,9 @@ def make_coocc_table(char_groups):
     :return: character co-occurrence matrix
     :rtype: pandas dataframe
     """
+    if char_groups.empty:
+        return pd.DataFrame(index=['BITMAP'], columns=['DEC'])
+
     print("+ Cross tabulating")
     tabulated = crosstab(
         char_groups['BITMAP'],
