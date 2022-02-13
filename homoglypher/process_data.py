@@ -51,7 +51,11 @@ class HomoglyphJSON:
         self.record = self._make_record()
 
     def _make_record(self):
-        """create a dataframe from the json homoglyph data."""
+        """create a dataframe from the json homoglyph data.
+
+        :returns: a table of all homoglyphs in the font
+        :rtype: pandas dataframe
+        """
         # make a 1xn_group dataframe, where each col has a list of decimals
         df = pd.json_normalize(self.data)
         # transpose it, explode the lists into rows, and rename the column
@@ -125,12 +129,19 @@ class FontTable:
         """find the number of rows where the sum of row values is over 1.
 
         rows of this kind have co-occurring characters, i.e. homoglyphs
+
+        :returns: number of homoglyphs in the font
+        :rtype: int
         """
         homoglyph_rows = self.coocc[self.coocc.sum(axis=1) > 1]
         return len(homoglyph_rows)
 
     def _make_record(self):
-        """create a small dataframe of high level metadata about the font."""
+        """create a small dataframe of high level metadata about the font.
+
+        :returns: a row of metadata
+        :rtype: pandas dataframe
+        """
         record = pd.DataFrame({
             'BASE': self.base,
             'STYLE': self.style,
@@ -144,14 +155,20 @@ class FontTable:
         """for rows with 2+ entries, return the decimals of each character.
 
         :param row: a row in the glypyh--unicode decimal table
-        :row type: pandas series
+        :type row: pandas series
+        :returns: group of characters with the same glyph
+        :rtype: list
         """
         mask = row.to_numpy().nonzero()
         nonzero = row.iloc[mask]
         return nonzero.index.tolist()
 
     def homoglyph_groups(self):
-        """find the unique set of decimal groups for each homoglyph."""
+        """find the unique set of decimal groups for each homoglyph.
+
+        :returns: all homoglyph groups in a font
+        :rtype: list
+        """
         homoglyphs = self.coocc[self.coocc.sum(axis=1) > 1]
         groups = []
         for dec in homoglyphs.index:
