@@ -9,8 +9,14 @@ import pandas as pd
 import numpy as np
 
 def get_style(name):
-    """
-    split the style from the base name of a font (e.g. times-bold => times, bold)
+    """split the style from the base name of a font.
+
+    example: times-bold => times, bold
+
+    :param name: font name
+    :type name: str
+    :returns: base font name and style
+    :rtype: tup
     """
     cut_at = 0
     for idx, char in enumerate(name):
@@ -26,9 +32,16 @@ def get_style(name):
 class HomoglyphJSON:
 
     def __init__(self, filename, indir):
-        """
-        initialize by loading the data, then assign the name and get the font base
-        and style. finally, make a dataframe record
+        """initialize by loading the data.
+
+
+        once the data is loaded, assign the name and get the font base and 
+        style. finally, make a dataframe record
+
+        :param filename: file to use
+        :type filename: str
+        :param indir: location of file
+        :type indir: str
         """
         path = os.path.join(indir, filename)
         with open(path, 'r') as j:
@@ -38,9 +51,7 @@ class HomoglyphJSON:
         self.record = self._make_record()
 
     def _make_record(self):
-        """
-        create a dataframe from the json homoglyph data
-        """
+        """create a dataframe from the json homoglyph data."""
         # make a 1xn_group dataframe, where each col has a list of decimals
         df = pd.json_normalize(self.data)
         # transpose it, explode the lists into rows, and rename the column
@@ -93,9 +104,14 @@ class HomoglyphJSON:
 class FontTable:
 
     def __init__(self, filename, indir):
-        """
-        initialize by loading the data, then assign the name and get the font base
-        and style
+        """initialize by loading the data.
+
+        once the data is loaded, assign the name and get the font base and style
+
+        :param filename: file to use
+        :type filename: str
+        :param indir: location of file
+        :type indir: str
         """
         path = os.path.join(indir, filename)
         self.coocc = pd.read_csv(path, index_col=0)
@@ -106,17 +122,15 @@ class FontTable:
         self.record = self._make_record()
 
     def _count_homoglyphs(self):
-        """
-        find the number of rows where the sum of row values is over 1. those have
-        co-occurring characters, i.e. homoglyphs
+        """find the number of rows where the sum of row values is over 1.
+
+        rows of this kind have co-occurring characters, i.e. homoglyphs
         """
         homoglyph_rows = self.coocc[self.coocc.sum(axis=1) > 1]
         return len(homoglyph_rows)
 
     def _make_record(self):
-        """
-        create a small dataframe of high level metadata about the font
-        """
+        """create a small dataframe of high level metadata about the font."""
         record = pd.DataFrame({
             'BASE': self.base,
             'STYLE': self.style,
@@ -127,18 +141,17 @@ class FontTable:
 
     @staticmethod
     def _get_homoglyph_group(row):
-        """
-        for a row in the co-occurrence table that has 2+ entries, return the
-        decimals of each character in the group
+        """for rows with 2+ entries, return the decimals of each character.
+
+        :param row: a row in the glypyh--unicode decimal table
+        :row type: pandas series
         """
         mask = row.to_numpy().nonzero()
         nonzero = row.iloc[mask]
         return nonzero.index.tolist()
 
     def homoglyph_groups(self):
-        """
-        find the unique set of decimal groups for each homoglyph
-        """
+        """find the unique set of decimal groups for each homoglyph."""
         homoglyphs = self.coocc[self.coocc.sum(axis=1) > 1]
         groups = []
         for dec in homoglyphs.index:

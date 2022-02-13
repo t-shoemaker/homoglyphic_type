@@ -8,12 +8,13 @@ import pandas as pd
 import numpy as np
 
 def compile_data(file_list, indir):
-    """
-    sum every co-occurrence table in a directory
+    """sum every co-occurrence table in a directory.
 
-    :param list file_list: list of tables
-    :param str indir: name of the input directory
-    :return: metadata for the fonts, summed co-occurrence table
+    :param file_list: list of tables
+    :type file_list: list
+    :param indir: name of the input directory
+    :type indir: str
+    :returns: metadata for the fonts, summed co-occurrence table
     :rtype: pandas dataframe
     """
     records = pd.DataFrame()
@@ -25,11 +26,11 @@ def compile_data(file_list, indir):
     return records, coocc
 
 def reformat_coocc(coocc):
-    """
-    reformat the co-occurrence table to maintain proper order
+    """reformat the co-occurrence table to maintain proper order.
 
-    :param pandas dataframe coocc: summed co-occurrence table
-    :return: reformatted co-occurrence table
+    :param coocc: summed co-occurrence table
+    :type cooc: pandas dataframe
+    :returns: reformatted co-occurrence table
     :rtype: pandas dataframe
     """
     reorder = [str(c) for c in coocc.index]
@@ -38,16 +39,29 @@ def reformat_coocc(coocc):
     coocc = coocc.fillna(0)
     return coocc
 
-if __name__ == '__main__':
-    parser = ArgumentParser()
-    parser.add_argument('--indir', type=str)
-    parser.add_argument('--outdir', type=str)
-    args = parser.parse_args()
+def main(args):
+    """stream in a list of co-occurrence tables and sum them.
 
+    :param args: command line arguments
+    :type args: namespace arguments
+    """
     fnames = os.listdir(args.indir)
 
     records, coocc = compile_data(fnames, args.indir)
     coocc = reformat_coocc(coocc)
 
-    records.to_csv(os.path.join(args.outdir, "metadata.csv"))
-    coocc.to_csv(os.path.join(args.outdir, "font_coocc.csv"))
+    records.to_csv(os.path.join(args.outdir), "font_metadata.csv"))
+    coocc.to_csv(os.path.join(args.outdir), "fond_coocc.csv"))
+
+if __name__ == '__main__':
+    parser = ArgumentParser()
+    parser.add_argument(
+        '--indir',
+        type=str
+    )
+    parser.add_argument(
+        '--outdir',
+        type=str
+    )
+    args = parser.parse_args()
+    main(args)
