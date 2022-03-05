@@ -12,14 +12,16 @@ def get_range(ttf):
     """use the formatted output of `fc-query` to find the character range of a ttf.
 
     :param ttf: path to a ttf file
-    ;type ttf: str
+    :type ttf: str
     :returns: a block of whitespace-separated hex ranges
     :rtype: str
     """ 
-    to_run = ["fc-query", "--format='%{charset}\n", ttf]
+    to_run = ["fc-query", "--format='%{charset}\n'", ttf]
     result = subprocess.run(to_run, stdout=subprocess.PIPE)
     stdout = result.stdout.decode('ascii')
-    return stdout
+    # some files have multiple styles stored inside them. we take the first
+    stdout = stdout.split("\n")
+    return ''.join(stdout[0])
 
 def expand_range(r):
     """expand the hex ranges to include every decimal therein.
